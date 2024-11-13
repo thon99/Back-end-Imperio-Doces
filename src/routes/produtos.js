@@ -4,12 +4,42 @@ const createConnection = require('../db');
 
 // Rota para criar um novo produto
 router.post('/', async (req, res) => {
-    const { nome_produto, descricao, preco, categoria, imagem_url, estoque, status } = req.body;
+    const { nome_produto, descricao, preco, imagem_url, estoque, status } = req.body;
+
+    // Define "categoria" como um valor fixo
+    const categoria = "categoria";
+
+    // Verificar se os campos obrigatórios estão presentes
+    if (!nome_produto || !preco) {
+        return res.status(400).send("Erro: Campos obrigatórios faltando (nome_produto, preco).");
+    }
+
     const connection = await createConnection();
-    await connection.execute('INSERT INTO produtos (nome_produto, descricao, preco, categoria, imagem_url, estoque, status) VALUES (?, ?, ?, ?, ?, ?, ?)', 
-        [nome_produto, descricao, preco, categoria, imagem_url, estoque, status]);
-    res.status(201).send('Produto criado!');
+    const values = [
+        nome_produto,
+        descricao ?? null,
+        preco,
+        categoria,
+        imagem_url ?? null,
+        estoque ?? null,
+        status ?? null
+    ];
+
+    try {
+        await connection.execute(
+            'INSERT INTO produtos (nome_produto, descricao, preco, categoria, imagem_url, estoque, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            values
+        );
+        res.status(201).send('Produto criado!');
+    } catch (error) {
+        console.error("Erro ao criar produto:", error);
+        res.status(500).send("Erro ao criar produto.");
+    } finally {
+        connection.end();
+    }
 });
+
+
 
 // Rota para listar todos os produtos
 router.get('/', async (req, res) => {

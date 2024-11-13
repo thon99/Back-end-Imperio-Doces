@@ -2,8 +2,21 @@ const express = require('express');
 const router = express.Router();
 const createConnection = require('../db');
 
-// Rota para criar um novo cliente
-router.post('/', async (req, res) => {
+// Middleware para verificar se o e-mail já está cadastrado
+const verificarEmailDuplicado = async (req, res, next) => {
+    const { email } = req.body;
+    const connection = await createConnection();
+    const [rows] = await connection.execute('SELECT id_cliente FROM clientes WHERE email = ?', [email]);
+    
+    if (rows.length > 0) {
+        return res.status(409).send('Este e-mail já está cadastrado.');
+    }
+    
+    next();
+};
+
+// Rota para criar um novo cliente com verificação de e-mail duplicado
+router.post('/', verificarEmailDuplicado, async (req, res) => {
     const { nome, email, senha, telefone } = req.body;
     const connection = await createConnection();
     await connection.execute('INSERT INTO clientes (nome, email, senha, telefone) VALUES (?, ?, ?, ?)', [nome, email, senha, telefone]);
